@@ -26,27 +26,23 @@ private:
     std::vector<Card*> mountainCards;
     // 历史记录
     std::stack<Record> undoStack;
-
-    void spawnMountain(cocos2d::Vec2 startPos); 
-    // 更新覆盖状态 返回翻开的牌 -> 历史记录 -> 回退功能
-    std::vector<Card*> updateCardsStatus();
-
-    // 辅助工具：从 deck 中安全抽牌并添加到场景
-    Card* addCardToUpArea(cocos2d::Vec2 pos, int zOrder);
+    cocos2d::Label* resultLabel;
 
     // ---------------------牌堆处理----------------------
-    // 洗牌
-    void initDeck();
-    // 拿取洗好的牌
-    Card* createCardFromDeck();
-    // 初始化上半区
-    void initUpArea(); 
-    // 初始化下半区
-    void initDownArea();
+    void initDeck();                                            // 洗牌
+    Card* createCardFromDeck();                                 // 拿取洗好的牌
+    void initUpArea();                                          // 初始化上半区
+    void initDownArea();                                        // 初始化下半区
 
     // ---------------------动作处理----------------------
-    void drawCardToWaste();         // 翻开额外牌最上面的一张   放入消除栈
-    void undoMove();                // 回退
+    void drawCardToWaste();                                     // 翻开额外牌最上面的一张   放入消除栈
+    void undoMove();                                            // 回退
+
+    // ---------------------辅助函数----------------------
+    void spawnMountain(cocos2d::Vec2 startPos);                 // 生成山峰区
+    std::vector<Card*> updateCardsStatus();                     // 更新覆盖状态 
+    Card* addCardToUpArea(cocos2d::Vec2 pos, int zOrder);       // 辅助函数：从 deck 中安全抽牌并添加到场景
+    void checkWinOrLoss();                                      // 胜负判定
 
 public:
     static cocos2d::Scene* createScene();

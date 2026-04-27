@@ -4,11 +4,6 @@
 
 USING_NS_CC;
 
-Scene* CardRemove::createScene()
-{
-    return CardRemove::create();
-}
-
 void CardRemove::initDeck()
 {
     deck.clear();
@@ -33,68 +28,6 @@ void CardRemove::initDeck()
     std::shuffle(deck.begin(), deck.end(), g);
     
     CCLOG("Deck initialized and shuffled. Total cards: %d", static_cast<int>(deck.size()));
-}
-
-Card* CardRemove::createCardFromDeck() 
-{
-    if (deck.empty()) return nullptr;
-    
-    Card::Config cfg = deck.back();
-    deck.pop_back();
-    
-    return Card::create(cfg);
-}
-
-void CardRemove::spawnMountain(Vec2 startPos) 
-{
-    // 间距计算：[182] [80] [182(中空)] [80] [182]
-    // 左右两列地基的中心距 = 80 + 182 + 80 + 182 = 524
-    float columnDist = 524.0f;
-    int baseZ = 10;
-
-    // --- 1. 地基层 c---c (2列 * 4层 = 8张) ---
-    for (int i = 0; i < 4; ++i) {
-        float offsetY = i * (CARD_HEIGHT / 2); // 每层向上覆盖 141 像素
-        // 左列 (Z-Order 随层数增加，保证上方覆盖下方)
-        addCardToUpArea(startPos + Vec2(0, offsetY), baseZ - i);
-        // 右列
-        addCardToUpArea(startPos + Vec2(columnDist, offsetY), baseZ - i);
-    }
-
-    // --- 2. 金字塔层 (向下延伸，覆盖一半高度) ---
-    // 金字塔逻辑起点：位于地基第4层下方半张牌的位置
-    float pyramidY = startPos.y  - CARD_HEIGHT * 0.5f; 
-    int pyramidZ = baseZ + 10;
-
-    // c-c-c (3张)
-    float gap3 = columnDist / 2.0f;
-    addCardToUpArea(Vec2(startPos.x, pyramidY), pyramidZ);
-    addCardToUpArea(Vec2(startPos.x + gap3, pyramidY), pyramidZ);
-    addCardToUpArea(Vec2(startPos.x + columnDist, pyramidY), pyramidZ);
-
-    // -c-c- (2张)
-    float row2Y = pyramidY - CARD_HEIGHT * 0.5f;
-    addCardToUpArea(Vec2(startPos.x + gap3 * 0.5f, row2Y), pyramidZ + 1);
-    addCardToUpArea(Vec2(startPos.x + gap3 * 1.5f, row2Y), pyramidZ + 1);
-
-    // --c-- (1张)
-    float row3Y = row2Y - CARD_HEIGHT * 0.5f;
-    addCardToUpArea(Vec2(startPos.x + gap3, row3Y), pyramidZ + 2);
-}
-
-Card* CardRemove::addCardToUpArea(Vec2 pos, int zOrder) 
-{
-    // 使用纯粹的抽牌函数
-    Card* card = createCardFromDeck();
-    if (card) {
-        card->setPosition(pos);
-        card->setFaceUp(false); // 初始全部扣住，由 updateCardsStatus 决定是否翻开
-        this->addChild(card, zOrder);
-        
-        // 【关键】加入到山峰管理容器，用于遮挡检测
-        mountainCards.push_back(card);
-    }
-    return card;
 }
 
 std::vector<Card*> CardRemove::updateCardsStatus() 
@@ -134,6 +67,31 @@ std::vector<Card*> CardRemove::updateCardsStatus()
         }
     }
     return newlyFlippedCards;
+}
+
+Card* CardRemove::addCardToUpArea(Vec2 pos, int zOrder) 
+{
+    // 使用纯粹的抽牌函数
+    Card* card = createCardFromDeck();
+    if (card) {
+        card->setPosition(pos);
+        card->setFaceUp(false); // 初始全部扣住，由 updateCardsStatus 决定是否翻开
+        this->addChild(card, zOrder);
+        
+        // 【关键】加入到山峰管理容器，用于遮挡检测
+        mountainCards.push_back(card);
+    }
+    return card;
+}
+
+Card* CardRemove::createCardFromDeck() 
+{
+    if (deck.empty()) return nullptr;
+    
+    Card::Config cfg = deck.back();
+    deck.pop_back();
+    
+    return Card::create(cfg);
 }
 
 void CardRemove::initUpArea() {
@@ -209,80 +167,12 @@ void CardRemove::drawCardToWaste()
 
     // 压入栈
     wasteCards.push(card);
-}
-
-static void problemLoading(const char* filename)
-{
-    printf("Error while loading : %s\n", filename);
-    printf("Depending on how you compiled you might have to add 'Resources/' in front of filenames\n");
-}
-
-bool CardRemove::init()
-{
-    if(!Scene::init())
-        return false;
-    
-    auto visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();
-
-
-    // 初始化所有区域
-    initDeck();
-    initUpArea();
-    initDownArea();
-    updateCardsStatus();
-
-    // 注册触摸事件
-    auto listener = EventListenerTouchOneByOne::create();
-    listener->setSwallowTouches(true);
-    listener->onTouchBegan = CC_CALLBACK_2(CardRemove::onTouchBegan, this);
-    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
-
-
-    // 窗口标题
-    auto label = Label::createWithTTF("Card Game", "fonts/Marker Felt.ttf", 48);
-    if(label == nullptr)
-        problemLoading("'fonts/Marker Felt.ttf'");
-    else
-    {
-        label->setPosition(Vec2(origin.x + visibleSize.width/2, 
-                                origin.y + visibleSize.height - label->getContentSize().height));
-        this->addChild(label, 1);
-    }
-
-    // 背景图
-    auto sprite = Sprite::create("CardRemove.jpg");
-    if(sprite == nullptr)
-        problemLoading("'CardRemove.jpg'");
-    else
-    {
-        sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-        // 设置在屏幕正中心
-        sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-        
-        // 计算缩放比例 -> 铺满
-        // 屏幕宽度 / 图片宽度 = 倍数
-        float scaleX = visibleSize.width / sprite->getContentSize().width;
-        float scaleY = visibleSize.height / sprite->getContentSize().height;
-        
-        // 应用缩放
-        sprite->setScaleX(scaleX);
-        sprite->setScaleY(scaleY);
-
-        // 添加到场景中，放在最底层（Z-Order 设置为 -1）
-        this->addChild(sprite, -1);
-    }
-    
-    return true;
-}
-
-void CardRemove::menuCloseCallback(Ref* pSender)
-{
-    Director::getInstance()->end();
+    checkWinOrLoss();
 }
 
 void CardRemove::undoMove() 
 {
+    resultLabel->setVisible(false); // 只要一回退，立刻隐藏提示字
     // 如果没有历史记录，或者只有初始发的那张废牌，就不执行
     if (undoStack.empty()) 
         return; 
@@ -325,6 +215,149 @@ void CardRemove::undoMove()
         
         // updateCardsStatus();
     }
+}
+
+void CardRemove::spawnMountain(Vec2 startPos) 
+{
+    // 间距计算：[182] [80] [182(中空)] [80] [182]
+    // 左右两列地基的中心距 = 80 + 182 + 80 + 182 = 524
+    float columnDist = 524.0f;
+    int baseZ = 10;
+
+    // --- 1. 地基层 c---c (2列 * 4层 = 8张) ---
+    for (int i = 0; i < 4; ++i) {
+        float offsetY = i * (CARD_HEIGHT / 2); // 每层向上覆盖 141 像素
+        // 左列 (Z-Order 随层数增加，保证上方覆盖下方)
+        addCardToUpArea(startPos + Vec2(0, offsetY), baseZ - i);
+        // 右列
+        addCardToUpArea(startPos + Vec2(columnDist, offsetY), baseZ - i);
+    }
+
+    // --- 2. 金字塔层 (向下延伸，覆盖一半高度) ---
+    // 金字塔逻辑起点：位于地基第4层下方半张牌的位置
+    float pyramidY = startPos.y  - CARD_HEIGHT * 0.5f; 
+    int pyramidZ = baseZ + 10;
+
+    // c-c-c (3张)
+    float gap3 = columnDist / 2.0f;
+    addCardToUpArea(Vec2(startPos.x, pyramidY), pyramidZ);
+    addCardToUpArea(Vec2(startPos.x + gap3, pyramidY), pyramidZ);
+    addCardToUpArea(Vec2(startPos.x + columnDist, pyramidY), pyramidZ);
+
+    // -c-c- (2张)
+    float row2Y = pyramidY - CARD_HEIGHT * 0.5f;
+    addCardToUpArea(Vec2(startPos.x + gap3 * 0.5f, row2Y), pyramidZ + 1);
+    addCardToUpArea(Vec2(startPos.x + gap3 * 1.5f, row2Y), pyramidZ + 1);
+
+    // --c-- (1张)
+    float row3Y = row2Y - CARD_HEIGHT * 0.5f;
+    addCardToUpArea(Vec2(startPos.x + gap3, row3Y), pyramidZ + 2);
+}
+
+void CardRemove::checkWinOrLoss()
+{
+    // 1. 判断胜利：山峰被清空
+    if (mountainCards.empty()) 
+    {
+        resultLabel->setString("YOU WIN !");
+        resultLabel->setVisible(true);
+        return;
+    }
+
+    // 2. 判断失败：牌堆空了，且无牌可消
+    if (pileCards.empty()) 
+    {
+        bool hasPlayableMove = false;
+        
+        if (!wasteCards.empty()) 
+        {
+            Card* activeCard = wasteCards.top();
+            
+            // 遍历山上所有可见且未被遮挡的牌
+            for (auto card : mountainCards) {
+                if (card->isVisible() && !card->getIsCovered()) {
+                    if (card->canMatch(activeCard)) {
+                        hasPlayableMove = true;
+                        break; // 只要找到一步可走的棋，就还没输
+                    }
+                }
+            }
+        }
+
+        if (!hasPlayableMove) 
+        {
+            resultLabel->setString("GAME OVER");
+            resultLabel->setVisible(true);
+        }
+    }
+}
+
+Scene* CardRemove::createScene()
+{
+    return CardRemove::create();
+}
+
+bool CardRemove::init()
+{
+    if(!Scene::init())
+        return false;
+    
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+
+
+    // 初始化所有区域
+    initDeck();
+    initUpArea();
+    initDownArea();
+    updateCardsStatus();
+
+    // 注册触摸事件
+    auto listener = EventListenerTouchOneByOne::create();
+    listener->setSwallowTouches(true);
+    listener->onTouchBegan = CC_CALLBACK_2(CardRemove::onTouchBegan, this);
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+
+
+    // 小标题
+    auto label = Label::createWithTTF("Card Game", "fonts/Marker Felt.ttf", 48);
+    label->setPosition(Vec2(origin.x + visibleSize.width/2, 
+                            origin.y + visibleSize.height - label->getContentSize().height));
+    this->addChild(label, 1);
+
+    // 胜负显示
+    resultLabel = Label::createWithTTF("", "fonts/Marker Felt.ttf", 64);
+    resultLabel->setPosition(Vec2(visibleSize.width / 2 + origin.x, visibleSize.height / 2 + origin.y));
+    resultLabel->setTextColor(Color4B::YELLOW);
+    resultLabel->enableOutline(Color4B::BLACK, 3);
+    resultLabel->setVisible(false);
+    this->addChild(resultLabel, 2000); 
+
+    // 背景图
+    auto sprite = Sprite::create("CardRemove.jpg");
+    sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+    // 设置在屏幕正中心
+    sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+    
+    // 计算缩放比例 -> 铺满
+    // 屏幕宽度 / 图片宽度 = 倍数
+    float scaleX = visibleSize.width / sprite->getContentSize().width;
+    float scaleY = visibleSize.height / sprite->getContentSize().height;
+    
+    // 应用缩放
+    sprite->setScaleX(scaleX);
+    sprite->setScaleY(scaleY);
+
+    // 添加到场景中，放在最底层（Z-Order 设置为 -1）
+    this->addChild(sprite, -1);
+
+    
+    return true;
+}
+
+void CardRemove::menuCloseCallback(Ref* pSender)
+{
+    Director::getInstance()->end();
 }
 
 bool CardRemove::onTouchBegan(Touch* touch, Event* event) 
@@ -408,6 +441,7 @@ bool CardRemove::onTouchBegan(Touch* touch, Event* event)
                     // 重新计算山峰中剩余卡牌的遮挡关系，并翻开下层牌
                     record.foldCards = updateCardsStatus();
                     undoStack.push(record);
+                    checkWinOrLoss();
                     return true; // 成功匹配，拦截触摸
                     
                 } 

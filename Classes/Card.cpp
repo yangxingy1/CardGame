@@ -2,6 +2,9 @@
 
 USING_NS_CC;
 
+// 日志类
+// 常量类
+
 // 初始化静态变量
 const std::vector<std::string> Card::suits = {"club", "diamond", "heart", "spade"};
 const std::vector<std::string> Card::colors = {"red", "black"};
