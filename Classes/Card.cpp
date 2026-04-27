@@ -98,5 +98,5 @@ bool Card::canMatch(Card* other)
     if(!other)
         return false;
     int diff = std::abs(this->getConfig().cardRank - other->getConfig().cardRank);
-    return diff == 1;
+    return diff == 1 || diff == 12;
 }
