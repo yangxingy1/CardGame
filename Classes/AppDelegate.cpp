@@ -23,7 +23,6 @@
  ****************************************************************************/
 
 #include "AppDelegate.h"
-#include "HelloWorldScene.h"
 #include "CardRemoveScene.h"
 
 // #define USE_AUDIO_ENGINE 1

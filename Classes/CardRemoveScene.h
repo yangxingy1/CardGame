@@ -12,10 +12,6 @@
 class CardRemove : public cocos2d::Scene
 {
 private:
-    // 区域位置
-    const float PILE_AREA = 580.0f;
-    const float CARD_WIDTH = 182.0f;
-    const float CARD_HEIGHT = 282.0f;
     // 所有牌的信息
     std::vector<Card::Config> deck;
     // 额外牌堆

@@ -51,12 +51,14 @@ list(APPEND GAME_SOURCE
      Classes/AppDelegate.cpp
      Classes/CardRemoveScene.cpp
      Classes/Card.cpp
+     Classes/Constant.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
      Classes/CardRemoveScene.h
      Classes/Record.h
      Classes/Card.h
+     Classes/Constant.h
      )
 
 if(ANDROID)

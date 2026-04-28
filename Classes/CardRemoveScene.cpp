@@ -1,6 +1,6 @@
 #include "CardRemoveScene.h"
 #include "SimpleAudioEngine.h"
-
+#include "Constant.h"
 
 USING_NS_CC;
 
@@ -94,10 +94,9 @@ Card* CardRemove::createCardFromDeck()
     return Card::create(cfg);
 }
 
-void CardRemove::initUpArea() {
-    // 扑克牌中心点 X = 182/2 = 91; Y = 2080 - 282/2 = 1939
-    // 两侧间隔187  187+91=278
-    Vec2 mountain1Start = Vec2(278, 1539);
+void CardRemove::initUpArea() 
+{
+    Vec2 mountain1Start = Vec2(Constant::MOUNTAIN_START_X, Constant::MOUNTAIN_START_Y);
     spawnMountain(mountain1Start);
 
 }
@@ -107,15 +106,16 @@ void CardRemove::initDownArea()
 
     // 初始化消除栈首张牌 -> 从 deck 中抽 1 张
     Card* firstWasteCard = createCardFromDeck();
-    if (firstWasteCard) {
-        firstWasteCard->setPosition(Vec2(830, 290)); 
+    if (firstWasteCard) 
+    {
+        firstWasteCard->setPosition(Vec2(Constant::WASTE_START_X, Constant::WASTE_START_Y)); 
         firstWasteCard->setFaceUp(true);
         this->addChild(firstWasteCard, 100);
         wasteCards.push(firstWasteCard);
     }
 
     // 额外牌堆起始位置
-    Vec2 drawPileBasePos = Vec2(250, 290);
+    Vec2 drawPileBasePos = Vec2(Constant::EXTRA_START_X, Constant::EXTRA_START_Y);
     
     // 初始化额外牌堆 -> 从 deck 中抽 20 张
     for (int i = 0; i < 38; ++i) {
@@ -123,7 +123,7 @@ void CardRemove::initDownArea()
         if (card) {
             card->setFaceUp(false); 
             // 坐标：向右方偏移 10 像素 
-            card->setPosition(drawPileBasePos + Vec2(i * 10.0f, 0));
+            card->setPosition(drawPileBasePos + Vec2(i * Constant::EXTRA_OFFSET, 0));
             this->addChild(card, i + 1); 
             pileCards.push_back(card);
         }
@@ -154,7 +154,7 @@ void CardRemove::drawCardToWaste()
         wasteCards.top()->setVisible(false);
 
     // 目标位置 (右侧消除栈位置)
-    Vec2 wastePos = Vec2(830, 290);
+    Vec2 wastePos = Vec2(Constant::WASTE_START_X, Constant::WASTE_START_Y);
     
     // 执行动画与翻牌
     auto move = MoveTo::create(0.2f, wastePos);
@@ -226,7 +226,7 @@ void CardRemove::spawnMountain(Vec2 startPos)
 
     // --- 1. 地基层 c---c (2列 * 4层 = 8张) ---
     for (int i = 0; i < 4; ++i) {
-        float offsetY = i * (CARD_HEIGHT / 2); // 每层向上覆盖 141 像素
+        float offsetY = i * (Constant::CARD_WIDTH / 2); // 每层向上覆盖半张卡
         // 左列 (Z-Order 随层数增加，保证上方覆盖下方)
         addCardToUpArea(startPos + Vec2(0, offsetY), baseZ - i);
         // 右列
@@ -235,7 +235,7 @@ void CardRemove::spawnMountain(Vec2 startPos)
 
     // --- 2. 金字塔层 (向下延伸，覆盖一半高度) ---
     // 金字塔逻辑起点：位于地基第4层下方半张牌的位置
-    float pyramidY = startPos.y  - CARD_HEIGHT * 0.5f; 
+    float pyramidY = startPos.y  - Constant::CARD_HEIGHT * 0.5f; 
     int pyramidZ = baseZ + 10;
 
     // c-c-c (3张)
@@ -245,12 +245,12 @@ void CardRemove::spawnMountain(Vec2 startPos)
     addCardToUpArea(Vec2(startPos.x + columnDist, pyramidY), pyramidZ);
 
     // -c-c- (2张)
-    float row2Y = pyramidY - CARD_HEIGHT * 0.5f;
+    float row2Y = pyramidY - Constant::CARD_HEIGHT * 0.5f;
     addCardToUpArea(Vec2(startPos.x + gap3 * 0.5f, row2Y), pyramidZ + 1);
     addCardToUpArea(Vec2(startPos.x + gap3 * 1.5f, row2Y), pyramidZ + 1);
 
     // --c-- (1张)
-    float row3Y = row2Y - CARD_HEIGHT * 0.5f;
+    float row3Y = row2Y - Constant::CARD_HEIGHT * 0.5f;
     addCardToUpArea(Vec2(startPos.x + gap3, row3Y), pyramidZ + 2);
 }
 
@@ -428,7 +428,7 @@ bool CardRemove::onTouchBegan(Touch* touch, Event* event)
                     activeCard->setVisible(false);
 
                     // 创建动画，飞向右下角的消除栈
-                    Vec2 wastePos = Vec2(830, 290);
+                    Vec2 wastePos = Vec2(Constant::WASTE_START_X, Constant::WASTE_START_Y);
                     auto move = MoveTo::create(0.2f, wastePos);
                     
                     // 将层级拔高，确保飞越屏幕时不会被其他牌挡住
@@ -454,11 +454,11 @@ bool CardRemove::onTouchBegan(Touch* touch, Event* event)
                     // auto shake = Sequence::create(MoveBy::create(0.05, Vec2(5, 0)), MoveBy::create(0.1, Vec2(-10, 0)), MoveBy::create(0.05, Vec2(5, 0)), nullptr);
                     // card->runAction(shake);
                     
-                    return true; // 既然点中了牌，虽然不匹配也要拦截，防止事件穿透到背景
+                    return true; 
                 }
             }
         }
     }
 
-    return false; // 如果点到了空白背景，不拦截
+    return false;
 }
